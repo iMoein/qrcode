@@ -816,6 +816,38 @@ function App() {
     setStep((step - 1) as WizardStep);
   };
 
+  const handleWizardKeyDown = (event: React.KeyboardEvent<HTMLElement>) => {
+    if (
+      event.key !== 'Enter' ||
+      event.defaultPrevented ||
+      event.nativeEvent.isComposing ||
+      event.shiftKey ||
+      event.altKey ||
+      event.ctrlKey ||
+      event.metaKey ||
+      !canAdvance ||
+      step >= 4
+    ) {
+      return;
+    }
+
+    const target = event.target as HTMLElement;
+
+    // Keep Enter available for multiline editing and controls whose native
+    // keyboard interaction already depends on Enter (dropdowns, buttons, etc.).
+    if (target instanceof HTMLTextAreaElement || target.isContentEditable) return;
+
+    if (target instanceof HTMLInputElement) {
+      const enterAdvancesFromInput = ['text', 'email', 'url', 'tel', 'number', 'search'].includes(target.type);
+      if (!enterAdvancesFromInput) return;
+    } else if (target.closest('button, a, [role="button"], [role="option"], [role="listbox"], [role="menu"], [role="menuitem"]')) {
+      return;
+    }
+
+    event.preventDefault();
+    goNext();
+  };
+
   return (
     <div className="app-shell">
       <header className="topbar">
@@ -852,7 +884,7 @@ function App() {
           </div>
         </section>
 
-        <section className="workspace page-width" aria-label={t('wizardLabel')}>
+        <section className="workspace page-width" aria-label={t('wizardLabel')} onKeyDown={handleWizardKeyDown}>
           <div className="wizard-card panel">
             <nav className="wizard-progress" aria-label={t('wizardLabel')}>
               {steps.map((item) => {
