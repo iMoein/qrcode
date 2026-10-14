@@ -40,6 +40,18 @@ import StyledQr, { type StyledQrHandle } from './components/StyledQr';
 import LocationPickerMap from './components/LocationPickerMap';
 import { DEFAULT_QR_STYLE, QR_STYLE_PRESETS, type QrPresetId, type QrVisualStyle } from './lib/qrStyle';
 import {
+  canShareFile,
+  downloadBlob,
+  isLikelyMobileDevice,
+  openBlobPreview,
+  recordDownloadExperiment,
+  resolveDownloadVariant,
+  shareFile,
+  type DownloadExtension,
+  type DownloadOutcome,
+  type DownloadVariant,
+} from './lib/downloadExperiment';
+import {
   buildPayload,
   clampUtf8,
   isValidEmail,
@@ -202,6 +214,7 @@ function App() {
   const [copiedTarget, setCopiedTarget] = useState<'payload' | 'page' | null>(null);
   const [geolocationStatus, setGeolocationStatus] = useState<GeolocationStatus>('idle');
   const [geolocationAccuracy, setGeolocationAccuracy] = useState<number | null>(null);
+  const [downloadVariant] = useState<DownloadVariant>(resolveDownloadVariant);
 
   const styledQrRef = useRef<StyledQrHandle>(null);
   const pageQrRef = useRef<HTMLDivElement>(null);
@@ -471,24 +484,86 @@ function App() {
     setCopiedTarget(target);
   };
 
-  const downloadStyledQr = async (extension: 'svg' | 'png') => {
-    if (!scannablePayload) return;
-    await styledQrRef.current?.download(extension);
+  const runPortableDownload = async (file: File, extension: DownloadExtension): Promise<DownloadOutcome> => {
+    const mobile = isLikelyMobileDevice();
+
+    if (mobile && canShareFile(file)) {
+      const shareResult = await shareFile(file, t('appName'));
+      if (shareResult === 'shared') return 'shared';
+      if (shareResult === 'cancelled') return 'share-cancelled';
+    }
+
+    // On touch-first browsers without file sharing, opening a real Blob URL is
+    // more reliable than a synthetic data-URL download. It also gives iOS a
+    // native preview from which the file can be saved or shared.
+    if (mobile && openBlobPreview(file)) return 'opened-preview';
+
+    try {
+      downloadBlob(file, file.name);
+      return 'blob-download';
+    } catch {
+      return 'failed';
+    }
   };
 
-  const downloadSvg = (ref: RefObject<HTMLDivElement>, filename: string) => {
+  const recordDownload = (extension: DownloadExtension, outcome: DownloadOutcome) => {
+    recordDownloadExperiment({
+      variant: downloadVariant,
+      extension,
+      outcome,
+      mobile: isLikelyMobileDevice(),
+    });
+  };
+
+  const downloadStyledQr = async (extension: DownloadExtension) => {
+    if (!scannablePayload || !styledQrRef.current) return;
+
+    if (downloadVariant === 'a') {
+      try {
+        await styledQrRef.current.downloadLegacy(extension);
+        recordDownload(extension, 'legacy-invoked');
+      } catch {
+        recordDownload(extension, 'failed');
+      }
+      return;
+    }
+
+    // The component warms both export files in the background. A cached File
+    // lets navigator.share() start during the original tap, which matters on
+    // mobile browsers that require transient user activation.
+    const cachedFile = styledQrRef.current.getCachedFile(extension);
+    const file = cachedFile ?? (await styledQrRef.current.getFile(extension));
+    if (!file) {
+      recordDownload(extension, 'failed');
+      return;
+    }
+
+    const outcome = await runPortableDownload(file, extension);
+    recordDownload(extension, outcome);
+  };
+
+  const downloadSvg = async (ref: RefObject<HTMLDivElement>, filename: string) => {
     const svg = ref.current?.querySelector('svg');
     if (!svg) return;
     const source = new XMLSerializer().serializeToString(svg);
     const blob = new Blob([`<?xml version="1.0" encoding="UTF-8"?>\n${source}`], { type: 'image/svg+xml;charset=utf-8' });
-    const url = URL.createObjectURL(blob);
-    const anchor = document.createElement('a');
-    anchor.href = url;
-    anchor.download = filename;
-    document.body.appendChild(anchor);
-    anchor.click();
-    anchor.remove();
-    URL.revokeObjectURL(url);
+
+    if (downloadVariant === 'a') {
+      const url = URL.createObjectURL(blob);
+      const anchor = document.createElement('a');
+      anchor.href = url;
+      anchor.download = filename;
+      document.body.appendChild(anchor);
+      anchor.click();
+      anchor.remove();
+      URL.revokeObjectURL(url);
+      recordDownload('svg', 'legacy-invoked');
+      return;
+    }
+
+    const file = new File([blob], filename, { type: 'image/svg+xml' });
+    const outcome = await runPortableDownload(file, 'svg');
+    recordDownload('svg', outcome);
   };
 
   const resetWizard = () => {
@@ -741,6 +816,38 @@ function App() {
     setStep((step - 1) as WizardStep);
   };
 
+  const handleWizardKeyDown = (event: React.KeyboardEvent<HTMLElement>) => {
+    if (
+      event.key !== 'Enter' ||
+      event.defaultPrevented ||
+      event.nativeEvent.isComposing ||
+      event.shiftKey ||
+      event.altKey ||
+      event.ctrlKey ||
+      event.metaKey ||
+      !canAdvance ||
+      step >= 4
+    ) {
+      return;
+    }
+
+    const target = event.target as HTMLElement;
+
+    // Keep Enter available for multiline editing and controls whose native
+    // keyboard interaction already depends on Enter (dropdowns, buttons, etc.).
+    if (target instanceof HTMLTextAreaElement || target.isContentEditable) return;
+
+    if (target instanceof HTMLInputElement) {
+      const enterAdvancesFromInput = ['text', 'email', 'url', 'tel', 'number', 'search'].includes(target.type);
+      if (!enterAdvancesFromInput) return;
+    } else if (target.closest('button, a, [role="button"], [role="option"], [role="listbox"], [role="menu"], [role="menuitem"]')) {
+      return;
+    }
+
+    event.preventDefault();
+    goNext();
+  };
+
   return (
     <div className="app-shell">
       <header className="topbar">
@@ -777,7 +884,7 @@ function App() {
           </div>
         </section>
 
-        <section className="workspace page-width" aria-label={t('wizardLabel')}>
+        <section className="workspace page-width" aria-label={t('wizardLabel')} onKeyDown={handleWizardKeyDown}>
           <div className="wizard-card panel">
             <nav className="wizard-progress" aria-label={t('wizardLabel')}>
               {steps.map((item) => {
