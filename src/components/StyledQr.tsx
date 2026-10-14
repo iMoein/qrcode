@@ -5,7 +5,6 @@ import { buildStyledQrOptions, type QrVisualStyle } from '../lib/qrStyle';
 export type StyledQrExtension = Extract<FileExtension, 'svg' | 'png'>;
 
 export type StyledQrHandle = {
-  downloadLegacy: (extension: StyledQrExtension) => Promise<void>;
   getCachedFile: (extension: StyledQrExtension) => File | null;
   getFile: (extension: StyledQrExtension) => Promise<File | null>;
 };
@@ -94,10 +93,6 @@ const StyledQr = forwardRef<StyledQrHandle, StyledQrProps>(function StyledQr(
   useImperativeHandle(
     ref,
     () => ({
-      async downloadLegacy(extension) {
-        if (!qrRef.current || !data) return;
-        await qrRef.current.download({ name: fileName, extension });
-      },
       getCachedFile(extension) {
         const blob = exportCacheRef.current[extension];
         return blob ? toFile(blob, extension) : null;

@@ -39,18 +39,7 @@ import SelectMenu, { type SelectMenuOption } from './components/SelectMenu';
 import StyledQr, { type StyledQrHandle } from './components/StyledQr';
 import LocationPickerMap from './components/LocationPickerMap';
 import { DEFAULT_QR_STYLE, QR_STYLE_PRESETS, type QrPresetId, type QrVisualStyle } from './lib/qrStyle';
-import {
-  canShareFile,
-  downloadBlob,
-  isLikelyMobileDevice,
-  openBlobPreview,
-  recordDownloadExperiment,
-  resolveDownloadVariant,
-  shareFile,
-  type DownloadExtension,
-  type DownloadOutcome,
-  type DownloadVariant,
-} from './lib/downloadExperiment';
+import { savePortableFile, type DownloadExtension } from './lib/download';
 import {
   buildPayload,
   clampUtf8,
@@ -214,7 +203,6 @@ function App() {
   const [copiedTarget, setCopiedTarget] = useState<'payload' | 'page' | null>(null);
   const [geolocationStatus, setGeolocationStatus] = useState<GeolocationStatus>('idle');
   const [geolocationAccuracy, setGeolocationAccuracy] = useState<number | null>(null);
-  const [downloadVariant] = useState<DownloadVariant>(resolveDownloadVariant);
 
   const styledQrRef = useRef<StyledQrHandle>(null);
   const pageQrRef = useRef<HTMLDivElement>(null);
@@ -484,62 +472,16 @@ function App() {
     setCopiedTarget(target);
   };
 
-  const runPortableDownload = async (file: File, extension: DownloadExtension): Promise<DownloadOutcome> => {
-    const mobile = isLikelyMobileDevice();
-
-    if (mobile && canShareFile(file)) {
-      const shareResult = await shareFile(file, t('appName'));
-      if (shareResult === 'shared') return 'shared';
-      if (shareResult === 'cancelled') return 'share-cancelled';
-    }
-
-    // On touch-first browsers without file sharing, opening a real Blob URL is
-    // more reliable than a synthetic data-URL download. It also gives iOS a
-    // native preview from which the file can be saved or shared.
-    if (mobile && openBlobPreview(file)) return 'opened-preview';
-
-    try {
-      downloadBlob(file, file.name);
-      return 'blob-download';
-    } catch {
-      return 'failed';
-    }
-  };
-
-  const recordDownload = (extension: DownloadExtension, outcome: DownloadOutcome) => {
-    recordDownloadExperiment({
-      variant: downloadVariant,
-      extension,
-      outcome,
-      mobile: isLikelyMobileDevice(),
-    });
-  };
-
   const downloadStyledQr = async (extension: DownloadExtension) => {
     if (!scannablePayload || !styledQrRef.current) return;
 
-    if (downloadVariant === 'a') {
-      try {
-        await styledQrRef.current.downloadLegacy(extension);
-        recordDownload(extension, 'legacy-invoked');
-      } catch {
-        recordDownload(extension, 'failed');
-      }
-      return;
-    }
-
-    // The component warms both export files in the background. A cached File
-    // lets navigator.share() start during the original tap, which matters on
-    // mobile browsers that require transient user activation.
+    // Export files are warmed in the QR component so mobile sharing can begin
+    // during the user's tap whenever the cached file is already available.
     const cachedFile = styledQrRef.current.getCachedFile(extension);
     const file = cachedFile ?? (await styledQrRef.current.getFile(extension));
-    if (!file) {
-      recordDownload(extension, 'failed');
-      return;
-    }
+    if (!file) return;
 
-    const outcome = await runPortableDownload(file, extension);
-    recordDownload(extension, outcome);
+    await savePortableFile(file, t('appName'));
   };
 
   const downloadSvg = async (ref: RefObject<HTMLDivElement>, filename: string) => {
@@ -547,23 +489,9 @@ function App() {
     if (!svg) return;
     const source = new XMLSerializer().serializeToString(svg);
     const blob = new Blob([`<?xml version="1.0" encoding="UTF-8"?>\n${source}`], { type: 'image/svg+xml;charset=utf-8' });
-
-    if (downloadVariant === 'a') {
-      const url = URL.createObjectURL(blob);
-      const anchor = document.createElement('a');
-      anchor.href = url;
-      anchor.download = filename;
-      document.body.appendChild(anchor);
-      anchor.click();
-      anchor.remove();
-      URL.revokeObjectURL(url);
-      recordDownload('svg', 'legacy-invoked');
-      return;
-    }
-
     const file = new File([blob], filename, { type: 'image/svg+xml' });
-    const outcome = await runPortableDownload(file, 'svg');
-    recordDownload('svg', outcome);
+
+    await savePortableFile(file, t('appName'));
   };
 
   const resetWizard = () => {
