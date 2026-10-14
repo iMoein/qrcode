@@ -1,0 +1,10 @@
+{
+  "name": "QR Code Studio",
+  "short_name": "QR Studio",
+  "description": "Create professional, customizable QR codes in your browser.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f6f7fb",
+  "theme_color": "#5a4bff",
+  "icons": []
+}

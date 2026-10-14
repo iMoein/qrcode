@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="en" dir="ltr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="theme-color" content="#f6f7fb" />
+    <meta name="color-scheme" content="light dark" />
+    <meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1" />
+    <meta name="description" content="Create professional QR codes for websites, contact cards, phone numbers, locations, social profiles, text and custom data. Customize colors, shapes and logos, then download SVG or PNG." />
+    <meta name="application-name" content="QR Code Studio" />
+    <meta name="author" content="imoein.com" />
+
+    <link rel="canonical" href="https://qrcode.imoein.com/" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="manifest" href="/site.webmanifest" />
+
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://qrcode.imoein.com/" />
+    <meta property="og:site_name" content="QR Code Studio" />
+    <meta property="og:title" content="Free QR Code Generator & Custom QR Designer | imoein.com" />
+    <meta property="og:description" content="Create professional QR codes for links, contact cards, locations, social profiles, text and custom data. Customize the design and download SVG or PNG." />
+    <meta property="og:image" content="https://qrcode.imoein.com/og-image.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:locale" content="en_US" />
+
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Free QR Code Generator & Custom QR Designer | imoein.com" />
+    <meta name="twitter:description" content="Create professional, customizable QR codes in your browser and download SVG or PNG." />
+    <meta name="twitter:image" content="https://qrcode.imoein.com/og-image.png" />
+
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@graph": [
+        {
+          "@type": "WebSite",
+          "@id": "https://qrcode.imoein.com/#website",
+          "url": "https://qrcode.imoein.com/",
+          "name": "QR Code Studio",
+          "alternateName": ["QR Studio", "QR Code Generator"],
+          "description": "A multilingual browser-based QR code generator and designer for links, contact details, locations, social profiles, text and custom data.",
+          "inLanguage": ["en", "fi", "fa", "ar", "ru", "zh", "ko", "ja", "de", "es", "fr"]
+        },
+        {
+          "@type": "WebApplication",
+          "@id": "https://qrcode.imoein.com/#app",
+          "name": "QR Code Studio",
+          "url": "https://qrcode.imoein.com/",
+          "description": "Create and customize static QR codes for websites, phone numbers, email, locations, social profiles, vCard contacts, text and mixed custom information.",
+          "applicationCategory": "UtilitiesApplication",
+          "operatingSystem": "Any",
+          "browserRequirements": "Requires a modern JavaScript-enabled web browser",
+          "isAccessibleForFree": true,
+          "offers": {
+            "@type": "Offer",
+            "price": "0",
+            "priceCurrency": "USD"
+          },
+          "featureList": [
+            "Website QR codes",
+            "Phone and email QR codes",
+            "Location QR codes",
+            "Social profile QR codes",
+            "vCard contact QR codes",
+            "Plain text QR codes",
+            "Mixed custom QR payloads",
+            "Custom colors and gradients",
+            "Custom QR module and eye shapes",
+            "Center logo support",
+            "SVG and PNG downloads",
+            "Local browser-side QR generation",
+            "11 interface languages"
+          ],
+          "publisher": {
+            "@type": "Organization",
+            "name": "imoein.com",
+            "url": "https://imoein.com/"
+          },
+          "isPartOf": { "@id": "https://qrcode.imoein.com/#website" }
+        }
+      ]
+    }
+    </script>
+
+    <script>
+      (() => {
+        try {
+          const saved = localStorage.getItem('qr-theme');
+          const mode = saved === 'light' || saved === 'dark' || saved === 'auto' ? saved : 'auto';
+          const systemDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+          const resolved = mode === 'auto' ? (systemDark ? 'dark' : 'light') : mode;
+          document.documentElement.dataset.theme = resolved;
+          document.documentElement.dataset.themeMode = mode;
+          document.documentElement.style.colorScheme = resolved;
+          const themeColor = document.querySelector('meta[name="theme-color"]');
+          if (themeColor) themeColor.setAttribute('content', resolved === 'dark' ? '#0a0d14' : '#f6f7fb');
+        } catch {}
+      })();
+    </script>
+
+    <title>Free QR Code Generator & Custom QR Designer | imoein.com</title>
+  </head>
+  <body>
+    <div id="root"></div>
+    <noscript>
+      <main>
+        <h1>Free QR Code Generator & Custom QR Designer</h1>
+        <p>QR Code Studio creates static QR codes for websites, phone numbers, email, locations, social profiles, vCard contacts, text and custom mixed information. JavaScript is required to use the interactive generator.</p>
+      </main>
+    </noscript>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

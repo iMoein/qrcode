@@ -1,0 +1,15 @@
+# QR Code Studio
+
+> Free multilingual QR code generator and QR designer available at https://qrcode.imoein.com/
+
+QR Code Studio is a browser-based tool for creating static QR codes. It supports websites, phone numbers, email addresses, physical locations, social profiles, vCard contact cards, plain text, and mixed custom information.
+
+Key capabilities:
+- Generate QR codes locally in the browser.
+- Customize module shapes, finder patterns, colors, gradients, quiet zone, and center logo.
+- Export QR codes as SVG or PNG.
+- Use the interface in English, Finnish, Persian, Arabic, Russian, Chinese, Korean, Japanese, German, Spanish, and French.
+- No account is required to create a QR code.
+
+Canonical URL: https://qrcode.imoein.com/
+Creator: https://imoein.com/

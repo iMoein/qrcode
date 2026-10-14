@@ -1,0 +1,36 @@
+{
+  "name": "qr-contact-studio",
+  "private": true,
+  "version": "2.4.1",
+  "type": "module",
+  "scripts": {
+    "font:local": "node scripts/vendor-vazirmatn.mjs",
+    "postinstall": "npm run font:local",
+    "predev": "npm run font:local",
+    "dev": "vite",
+    "prebuild": "npm run font:local",
+    "build": "tsc -b && vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc -b --pretty false"
+  },
+  "dependencies": {
+    "lucide-react": "^0.468.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-qr-code": "^2.0.15",
+    "vazirmatn": "33.0.3",
+    "qr-code-styling": "1.9.2",
+    "leaflet": "^1.9.4"
+  },
+  "devDependencies": {
+    "@types/react": "^18.3.12",
+    "@types/react-dom": "^18.3.1",
+    "@vitejs/plugin-react": "^4.3.3",
+    "typescript": "^5.6.3",
+    "vite": "^5.4.10",
+    "@types/leaflet": "^1.9.14"
+  },
+  "engines": {
+    "node": ">=18.18.0"
+  }
+}
